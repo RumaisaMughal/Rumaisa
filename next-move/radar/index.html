@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retention Radar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap">
+<style>
+/* Layout: ops dashboard. KPI strip → chart + action mix → priority call list. Single light theme to match Next Move. */
+:root{
+  --bg:#F4F5F7; --card:#FFFFFF; --ink:#14161A; --muted:#5B616E; --faint:#8A909B; --line:#E6E8EC;
+  --red:#E0202F; --red-soft:#FDECEE; --green:#178A4C; --green-soft:#E8F5EE;
+  --amber:#B86E00; --amber-soft:#FFF3DF; --grey:#B7BCC5; --pale:#E3E5EA;
+  --font:'Nunito Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid #2D6FE0;outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:18px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+h1{margin:4px 0 2px;font-size:30px;font-weight:900;line-height:1.1}
+.sub{color:var(--muted);margin:0;max-width:62ch;line-height:1.45}
+.tag{font-size:12px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 12px}
+.card{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 2px rgba(20,22,26,.04);min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi span{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.kpi strong{display:block;font-size:30px;font-weight:900;margin:6px 0 2px;line-height:1}
+.kpi small{color:var(--muted);font-size:12.5px;line-height:1.35;display:block}
+.kpi.hero{background:var(--ink);color:var(--card)}
+.kpi.hero span,.kpi.hero small{color:#B8BDC5}
+.kpi.hero strong{color:#7FDBA6}
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+h2{margin:0 0 4px;font-size:18px;font-weight:900}
+.h2sub{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+svg text{font-family:var(--font)}
+.mix{display:flex;flex-direction:column;gap:12px}
+.mixrow{display:grid;grid-template-columns:118px 1fr 44px;gap:10px;align-items:center;font-size:14px}
+.mixrow b{font-weight:800}
+.mixbar{height:12px;border-radius:99px;background:var(--pale);overflow:hidden}
+.mixbar i{display:block;height:100%;border-radius:99px}
+.mixnote{font-size:12.5px;color:var(--muted);grid-column:2 / 4;margin-top:-6px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:var(--card);border-radius:99px;padding:7px 13px;font-weight:700;font-size:13.5px}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.tablewrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;min-width:760px;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.r,td.r{text-align:right}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#FAFAFB}
+tr.demo td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.pill{display:inline-flex;align-items:center;font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px}
+.p-T{background:var(--green-soft);color:var(--green)}
+.p-B{background:#E9EAEE;color:var(--ink)}
+.p-R{background:var(--red-soft);color:var(--red)}
+.p-A{background:var(--amber-soft);color:var(--amber)}
+.p-L{background:#F0F1F3;color:var(--faint)}
+.pr{display:flex;align-items:center;gap:8px}
+.pr i{display:block;height:6px;border-radius:9px;background:var(--red)}
+.send{font-weight:800;font-size:13px;border:1.5px solid var(--ink);border-radius:99px;padding:5px 12px}
+.send.done{background:var(--green);border-color:var(--green);color:var(--card)}
+.more{display:flex;justify-content:center;margin-top:12px}
+.more button{font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.foot{font-size:12px;color:var(--faint);line-height:1.5}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:12px 18px;border-radius:99px;font-weight:700;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+@media (max-width:980px){.kpis{grid-template-columns:repeat(2,1fr)}.kpi.hero{grid-column:1 / -1}.grid2{grid-template-columns:1fr}}
+@media (max-width:420px){h1{font-size:25px}.kpi strong{font-size:25px}}
+</style>
+</head><body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Next Move · TFS view</div>
+      <h1>Retention Radar</h1>
+      <p class="sub">Every lessee near lease end, scored by how much equity could leave with them and what Next Move will recommend. Run on the same calculator as the customer app.</p>
+    </div>
+    <span class="tag num" id="pfTag"></span>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>When leases end</h2>
+      <p class="h2sub">Lessees by months left, colored by the move Next Move recommends. Next Move reaches out at 9 months.</p>
+      <div id="chart"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="card">
+      <h2>Recommended moves</h2>
+      <p class="h2sub">Lessees in the 9-month window and what each group means for TFS.</p>
+      <div class="mix" id="mix"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div><h2>Priority list</h2><p class="h2sub" style="margin:0">Ranked by equity at stake and how soon the lease ends. Advocate cases always come first.</p></div>
+      <div class="chips" id="chips" role="group" aria-label="Filter by move"></div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Customer</th><th>Vehicle</th><th class="r">Months left</th><th class="r">Equity</th><th class="r">Mileage fee ahead</th><th>Next Move</th><th>Priority</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="more"><button id="moreBtn">Show all</button></div>
+  </section>
+
+  <p class="foot">Concept demo with synthetic data: 200 generated lessees plus demo customers Maria and Carlos. Equity = estimated market value − buyout. Mileage fee = projected miles over allowance × $0.15. Figures are illustrative, not TFS data.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  var RAW = [["001","Leo","WA","Corolla Cross",2024,11,-128,0,40788,45000,0,"L",310],["002","Jamie","IL","Corolla Cross",2024,1,-687,2770,54468,36000,0,"R",406],["003","Jordan","TX","Camry",2024,3,-661,0,20052,45000,0,"R",351],["004","Kai","OH","Corolla Cross",2024,2,1349,0,33852,48750,0,"B",415],["005","Kai","CA","Highlander",2024,7,1951,0,36855,48750,0,"B",511],["006","Kai","OH","Corolla",2023,2,-1124,1809,57060,45000,0,"R",292],["007","Kai","WA","Highlander",2023,5,3144,0,30996,45000,0,"B",528],["008","Kai","WA","Corolla",2024,6,-166,0,37044,45000,0,"R",266],["009","Drew","OH","Camry",2023,5,16,0,28188,45000,3,"A",461],["010","Drew","CA","Corolla Cross",2023,3,-92,454,48024,45000,0,"R",286],["011","Kai","OH","Corolla",2023,7,1220,1253,32352,24000,0,"T",335],["012","Jamie","IL","Corolla Cross",2024,3,2179,2198,59652,45000,5,"A",375],["013","Jamie","OH","Corolla Cross",2023,4,-1535,994,51624,45000,0,"R",377],["014","Kai","CA","Highlander",2023,6,-949,86,45576,45000,0,"R",597],["015","Casey","NY","Corolla",2023,7,-1499,610,49068,45000,0,"R",249],["016","Avery","TX","Highlander",2023,9,2528,0,41436,45000,0,"B",629],["017","Alex","TX","Corolla Cross",2023,7,-288,0,35712,45000,0,"R",405],["018","Riley","CO","Highlander",2024,10,2905,0,24264,45000,2,"L",569],["019","Riley","WA","Highlander",2024,4,4068,0,21168,30000,0,"B",584],["020","Amir","AZ","RAV4",2024,9,918,0,19008,36000,0,"B",364],["021","Jamie","CO","Tacoma",2024,2,1978,1053,52020,45000,0,"T",400],["022","Leo","WA","Tacoma",2024,8,2524,0,40860,45000,0,"B",505],["023","Kai","OH","RAV4",2023,3,43,1955,49032,36000,0,"T",480],["024","Taylor","IL","Tacoma",2023,6,-1005,2614,53424,36000,0,"R",415],["025","Taylor","CA","Camry",2024,12,1452,0,44748,45000,0,"L",351],["026","Riley","IL","Tacoma",2023,3,-962,335,47232,45000,0,"R",493],["027","Sam","OH","Corolla",2023,10,-1229,0,33156,45000,0,"L",342],["028","Jordan","WA","Camry",2024,10,1054,0,27864,45000,0,"L",386],["029","Jordan","WA","RAV4",2023,4,1630,2750,57330,39000,0,"T",449],["030","Kai","CO","Tacoma",2024,11,1484,0,36216,45000,0,"L",526],["031","Amir","IL","Highlander",2024,12,2954,0,31932,45000,5,"L",512],["032","Riley","CA","Highlander",2024,3,531,1733,56556,45000,0,"T",628],["033","Riley","CO","Tacoma",2023,8,-1073,965,36432,30000,1,"R",523],["034","Drew","IL","Tacoma",2024,3,1913,0,30342,48750,0,"B",595],["035","Maya","TX","RAV4",2024,8,-684,0,29988,45000,0,"R",499],["036","Leo","CO","Corolla Cross",2024,3,2849,0,37908,45000,0,"B",422],["037","Amir","OH","Corolla",2023,12,834,875,50832,45000,0,"L",357],["038","Riley","OH","Corolla Cross",2024,5,-82,0,23292,45000,4,"A",357],["039","Maya","WA","Camry",2024,6,1762,0,22488,30000,0,"B",374],["040","Morgan","TX","Tacoma",2024,6,-369,11,45072,45000,0,"R",529],["041","Leo","TX","Corolla Cross",2023,12,2432,0,19536,30000,0,"L",421],["042","Drew","CA","RAV4",2024,7,1067,0,35424,36000,2,"B",530],["043","Casey","WA","Camry",2023,5,1415,1053,43020,36000,2,"B",389],["044","Amir","CA","Corolla Cross",2023,2,209,0,28800,36000,0,"B",430],["045","Riley","CO","Corolla",2023,2,-1404,0,25344,45000,0,"R",311],["046","Amir","AZ","Highlander",2023,5,3322,0,43308,45000,0,"B",487],["047","Amir","IL","Tacoma",2023,10,4438,2063,58752,45000,0,"L",434],["048","Quinn","TX","Highlander",2024,11,-494,832,50544,45000,0,"L",655],["049","Nora","TX","Camry",2023,10,1924,714,53508,48750,0,"L",398],["050","Maya","WA","Corolla Cross",2023,6,1476,940,42264,36000,0,"B",371],["051","Casey","WA","Corolla",2024,11,619,1156,52704,45000,0,"L",315],["052","Casey","OH","Highlander",2023,4,175,378,26520,24000,1,"B",669],["053","Riley","NY","Tacoma",2023,9,-1485,0,42300,45000,0,"R",556],["054","Drew","NY","Corolla",2024,6,367,0,32184,45000,0,"B",283],["055","Quinn","IL","Corolla",2024,8,-1358,0,44538,48750,0,"R",309],["056","Taylor","CA","Tacoma",2024,11,-576,0,28080,45000,0,"L",394],["057","Riley","CO","Highlander",2023,8,5681,0,21456,45000,0,"B",635],["058","Taylor","TX","Tacoma",2023,5,4566,0,27096,30000,0,"B",611],["059","Maya","NY","Camry",2024,4,1801,2894,64296,45000,0,"T",370],["060","Drew","NY","Corolla Cross",2023,3,-15,2279,51192,36000,0,"R",306],["061","Riley","TX","Corolla Cross",2023,3,3731,513,48420,45000,0,"T",306],["062","Alex","NY","Tacoma",2024,4,1152,2025,58500,45000,0,"T",586],["063","Taylor","TX","Highlander",2024,12,-2011,1246,47307,39000,0,"L",505],["064","Kai","IL","Highlander",2024,11,-1160,0,39276,45000,0,"L",615],["065","Riley","TX","Camry",2023,5,-9,1322,47814,39000,0,"R",331],["066","Leo","WA","Tacoma",2023,3,26,373,47484,45000,0,"T",598],["067","Avery","OH","Camry",2024,8,-643,1064,52092,45000,0,"R",314],["068","Maya","AZ","Camry",2023,4,1194,1291,53604,45000,2,"T",311],["069","Sam","CO","Corolla Cross",2023,6,-1245,0,28944,45000,0,"R",354],["070","Taylor","AZ","RAV4",2024,8,3143,459,39060,36000,0,"B",453],["071","Riley","AZ","Corolla Cross",2023,6,-456,0,37008,45000,0,"R",397],["072","Jamie","TX","Tacoma",2023,3,1027,0,16512,30000,0,"B",578],["073","Maya","OH","Camry",2024,3,1227,0,24408,36000,0,"B",352],["074","Amir","OH","Camry",2023,3,2760,0,42471,48750,0,"B",454],["075","Drew","NY","Highlander",2024,4,3615,0,29448,30000,0,"B",568],["076","Riley","CA","Corolla Cross",2023,1,-1260,0,29448,45000,0,"R",391],["077","Alex","OH","Corolla",2023,1,-483,0,28692,45000,0,"R",283],["078","Amir","AZ","RAV4",2023,12,3396,799,50328,45000,0,"L",484],["079","Casey","NY","Highlander",2023,12,197,1652,47016,36000,0,"L",530],["080","Nora","AZ","Corolla Cross",2023,7,583,418,26784,24000,5,"A",378],["081","Casey","CO","Camry",2024,6,3481,0,18000,36000,0,"B",349],["082","Sam","CO","Corolla Cross",2024,4,-225,0,39816,45000,0,"R",296],["083","Sam","OH","Corolla",2024,5,-176,1223,56901,48750,0,"R",245],["084","Riley","NY","Tacoma",2024,12,-630,0,21762,48750,0,"L",388],["085","Riley","NY","Tacoma",2023,5,5102,0,41940,45000,0,"B",442],["086","Avery","WA","Camry",2024,10,3891,43,45288,45000,1,"L",425],["087","Alex","IL","Camry",2023,5,2206,0,37872,45000,0,"B",304],["088","Maya","CO","Tacoma",2024,3,3568,269,50544,48750,0,"T",503],["089","Alex","OH","Highlander",2023,5,4388,4180,63864,36000,0,"T",517],["090","Maya","CA","Highlander",2024,10,-2136,0,37764,45000,0,"L",639],["091","Avery","WA","Tacoma",2024,3,104,572,48816,45000,0,"T",574],["092","Maya","TX","RAV4",2023,7,296,0,35172,36000,0,"B",474],["093","Sam","TX","Corolla Cross",2024,7,2446,2052,58680,45000,1,"T",345],["094","Kai","WA","Highlander",2023,3,4258,454,33024,30000,0,"T",556],["095","Drew","TX","Camry",2024,7,1279,0,40680,45000,1,"B",317],["096","Sam","WA","Tacoma",2023,8,-1232,248,46656,45000,0,"R",570],["097","Morgan","TX","Corolla",2023,12,1430,2624,53496,36000,0,"L",250],["098","Amir","AZ","RAV4",2023,5,1272,0,44604,45000,0,"B",388],["099","Maya","AZ","Tacoma",2023,10,1603,2003,49356,36000,0,"L",596],["100","Kai","AZ","Tacoma",2023,5,607,0,32688,45000,0,"B",499],["101","Amir","NY","Camry",2023,8,-991,1750,47664,36000,2,"R",337],["102","Jordan","OH","Camry",2024,11,-1860,0,42840,45000,0,"L",400],["103","Casey","CA","Corolla Cross",2024,7,-705,1161,52740,45000,0,"R",299],["104","Maya","AZ","Camry",2024,11,-746,2027,37512,24000,0,"L",388],["105","Riley","WA","Tacoma",2023,3,-565,0,27648,45000,0,"R",519],["106","Riley","WA","RAV4",2024,6,-1189,1739,47592,36000,0,"R",408],["107","Taylor","NY","Tacoma",2024,3,-1011,2176,50508,36000,0,"R",486],["108","Maya","TX","Corolla Cross",2024,11,-317,0,27612,48750,0,"L",314],["109","Kai","AZ","Corolla",2024,10,-866,0,28764,45000,0,"L",250],["110","Jordan","WA","Corolla Cross",2023,3,1763,2209,59724,45000,0,"T",420],["111","Taylor","CO","Camry",2023,12,1646,194,46296,45000,0,"L",318],["112","Jamie","OH","Tacoma",2024,11,-117,0,25884,45000,0,"L",444],["113","Avery","WA","Highlander",2023,11,3003,1031,42876,36000,0,"L",433],["114","Jordan","WA","Tacoma",2023,7,-2066,1015,30768,24000,0,"R",559],["115","Nora","CO","Camry",2024,10,900,529,48528,45000,0,"L",357],["116","Taylor","IL","Highlander",2024,3,-15,3964,71424,45000,0,"R",476],["117","Avery","NY","Highlander",2024,8,3386,0,37260,45000,0,"B",567],["118","Kai","IL","Corolla Cross",2023,9,557,1480,45864,36000,2,"T",309],["119","Quinn","OH","Corolla Cross",2023,7,164,0,25056,45000,0,"B",351],["120","Sam","TX","Corolla Cross",2023,1,-1512,2214,59760,45000,0,"R",364],["121","Maya","CA","Camry",2023,1,3184,117,49530,48750,2,"T",357],["122","Kai","IL","Highlander",2024,10,-1102,0,37476,45000,0,"L",526],["123","Sam","NY","Camry",2023,11,-716,0,35136,45000,0,"L",334],["124","Amir","WA","Corolla Cross",2024,10,3339,86,45576,45000,0,"L",339],["125","Alex","AZ","Tacoma",2024,10,4619,0,38916,45000,2,"L",586],["126","Quinn","WA","Corolla Cross",2023,8,129,2052,58680,45000,0,"T",428],["127","Maya","CO","RAV4",2024,9,-1163,0,30888,36000,0,"R",462],["128","Morgan","AZ","RAV4",2024,9,2211,0,42012,45000,0,"B",481],["129","Sam","IL","Camry",2023,1,-1774,405,47700,45000,0,"R",375],["130","Drew","TX","Highlander",2023,8,4343,0,25920,45000,2,"B",523],["131","Maya","CO","Highlander",2023,12,2293,356,47376,45000,0,"L",535],["132","Amir","TX","Highlander",2023,10,2755,1069,52128,45000,0,"L",657],["133","Sam","AZ","Corolla",2024,4,-1271,1264,44424,36000,0,"R",239],["134","Riley","AZ","Corolla",2023,2,1896,0,36108,45000,0,"B",253],["135","Alex","IL","Camry",2023,8,-1421,2419,52128,36000,5,"A",343],["136","Kai","OH","Tacoma",2024,9,3104,362,47412,45000,0,"T",432],["137","Avery","CO","Corolla",2024,1,-869,0,18000,36000,0,"R",260],["138","Casey","AZ","Tacoma",2023,8,-1777,0,32076,45000,0,"R",502],["139","Kai","NY","Corolla Cross",2024,8,-442,0,29232,36000,0,"R",425],["140","Quinn","CA","Camry",2023,10,-1177,4822,68148,36000,0,"L",351],["141","Jamie","IL","Camry",2024,8,1116,0,25968,30000,0,"B",414],["142","Jordan","WA","Corolla",2023,1,999,880,50868,45000,0,"T",329],["143","Maya","WA","Camry",2024,11,134,257,50466,48750,0,"L",365],["144","Taylor","AZ","Camry",2024,8,-1983,815,41436,36000,0,"R",449],["145","Drew","TX","Tacoma",2024,12,433,0,22680,45000,0,"L",504],["146","Avery","IL","RAV4",2024,6,-765,0,44172,45000,0,"R",486],["147","Jordan","TX","Corolla Cross",2023,1,-809,0,44604,45000,0,"R",395],["148","Taylor","WA","Highlander",2024,1,-1882,1526,40176,30000,0,"R",509],["149","Jamie","CA","Corolla",2023,5,1783,643,49284,45000,0,"T",335],["150","Nora","IL","Corolla Cross",2023,12,-622,0,44964,45000,0,"L",324],["151","Amir","TX","RAV4",2024,7,1451,1422,58227,48750,0,"T",419],["152","Morgan","WA","Corolla Cross",2023,12,-1536,151,46008,45000,0,"L",400],["153","Drew","WA","Highlander",2023,8,-839,0,26172,36000,0,"R",598],["154","Amir","TX","Corolla Cross",2024,2,-1648,0,42084,45000,0,"R",376],["155","Avery","WA","Corolla Cross",2024,10,-1380,0,30420,45000,0,"L",411],["156","Avery","IL","Highlander",2023,7,4565,32,36216,36000,0,"B",584],["157","Morgan","NY","Corolla Cross",2024,6,-560,3528,62517,39000,0,"R",317],["158","Amir","OH","Tacoma",2024,6,2364,880,41868,36000,0,"B",482],["159","Alex","CA","Camry",2023,9,1535,0,31464,45000,0,"B",446],["160","Riley","IL","Camry",2024,11,2585,0,29628,36000,0,"L",409],["161","Avery","WA","RAV4",2024,8,1296,864,50760,45000,0,"T",451],["162","Amir","IL","Camry",2024,7,2554,0,23688,36000,0,"B",438],["163","Casey","NY","Corolla Cross",2024,9,517,54,45360,45000,0,"T",343],["164","Jamie","WA","Highlander",2024,9,-665,0,20208,30000,0,"R",577],["165","Leo","OH","Corolla",2023,10,508,0,24024,30000,0,"L",349],["166","Jamie","AZ","Camry",2023,3,1531,961,42408,36000,0,"B",335],["167","Jordan","WA","Camry",2024,11,2687,1804,57024,45000,0,"L",386],["168","Morgan","OH","Corolla Cross",2023,11,-1054,1069,52128,45000,2,"L",391],["169","Riley","WA","RAV4",2024,5,202,0,28980,45000,0,"B",395],["170","Casey","NY","Corolla Cross",2024,6,344,0,36180,45000,1,"B",333],["171","Nora","AZ","Highlander",2024,4,772,1485,54900,45000,0,"T",543],["172","Morgan","AZ","Corolla Cross",2024,5,-699,551,39672,36000,0,"R",312],["173","Amir","WA","Camry",2023,1,-974,2360,60732,45000,1,"R",387],["174","Jamie","WA","Highlander",2024,1,4271,0,21132,36000,0,"B",482],["175","Amir","TX","RAV4",2024,7,2956,0,26640,30000,0,"B",355],["176","Nora","NY","Corolla",2023,7,-875,329,47196,45000,0,"R",243],["177","Casey","IL","Tacoma",2023,2,-1813,0,38628,45000,0,"R",523],["178","Taylor","IL","Highlander",2023,6,3863,0,31392,36000,0,"B",500],["179","Morgan","WA","Tacoma",2023,12,109,0,40572,45000,0,"L",386],["180","Kai","TX","Camry",2024,11,371,0,44424,45000,0,"L",397],["181","Amir","AZ","Corolla",2024,9,1354,1247,53316,45000,0,"T",312],["182","Kai","TX","Highlander",2023,3,4714,1885,48564,36000,0,"T",615],["183","Avery","WA","Corolla",2023,8,-1217,0,28104,30000,0,"R",289],["184","Avery","OH","Highlander",2024,2,1158,2252,51012,36000,0,"T",533],["185","Quinn","NY","Corolla Cross",2024,7,1476,367,47448,45000,0,"T",362],["186","Amir","CA","Corolla Cross",2023,8,936,0,31590,48750,0,"B",400],["187","Kai","AZ","Camry",2023,7,581,0,36432,45000,0,"B",310],["188","Alex","NY","Corolla Cross",2024,12,-562,0,27729,39000,0,"L",422],["189","Kai","TX","Tacoma",2024,4,2708,1231,53208,45000,0,"T",592],["190","Amir","OH","Highlander",2023,1,5215,232,46548,45000,0,"T",509],["191","Avery","TX","Corolla",2023,2,753,2360,51732,36000,0,"T",261],["192","Taylor","CA","Tacoma",2023,4,-291,0,33372,45000,0,"R",438],["193","Jordan","IL","Tacoma",2024,11,3135,0,27576,36000,0,"L",388],["194","Sam","WA","Camry",2023,3,185,103,45684,45000,0,"T",442],["195","Drew","CA","Highlander",2024,1,76,0,44460,45000,1,"B",605],["196","Leo","CA","Highlander",2023,10,-215,4738,70590,39000,0,"L",542],["197","Jamie","IL","Corolla",2023,2,1420,38,45252,45000,2,"T",351],["198","Riley","OH","Corolla",2024,11,2629,1058,43056,36000,0,"L",236],["199","Drew","IL","Tacoma",2023,6,2528,0,37764,45000,0,"B",415],["200","Riley","CA","Highlander",2023,4,3938,0,29160,45000,0,"B",600]];
+  RAW.push(['MAR','Maria','TX','RAV4',2023,7,2100,603,49020,45000,0,'T',420,1]);
+  RAW.push(['CAR','Carlos','TX','Tacoma',2023,7,2100,603,49020,45000,3,'A',420,1]);
+  var C = RAW.map(function(r){return {id:r[0],name:r[1],state:r[2],model:r[3],year:r[4],left:r[5],eq:r[6],fee:r[7],proj:r[8],allow:r[9],late:r[10],act:r[11],pay:r[12],demo:!!r[13]};});
+  var ACT = {
+    A:{label:'Advocate',color:'#B86E00',note:'Late payments. A person calls first, no upsell.'},
+    T:{label:'Trade up',color:'#178A4C',note:'Positive equity and high miles. Equity becomes a TFS down payment.'},
+    B:{label:'Buy out',color:'#14161A',note:'Positive equity. Keep the car, finance the buyout with TFS.'},
+    R:{label:'Return',color:'#E0202F',note:'No equity. Waive the $350 fee if they lease again with TFS.'},
+    L:{label:'Too early',color:'#D3D6DC',note:''}
+  };
+  function $(n){return (n<0?'−$':'$')+Math.abs(Math.round(n)).toLocaleString('en-US')}
+  function k(n){return n>=1e6?'$'+(n/1e6).toFixed(2)+'M':'$'+Math.round(n/1000)+'K'}
+  var win = C.filter(function(c){return c.left<=9});
+  win.forEach(function(c){
+    // Priority: advocate first; then equity at stake weighted by urgency, plus fee pain.
+    var urg = (10-c.left)/9;
+    c.score = c.act==='A' ? 1000 : Math.max(0,c.eq)*urg/30 + c.fee*urg/30;
+  });
+  var maxS = Math.max.apply(null, win.filter(function(c){return c.act!=='A'}).map(function(c){return c.score}));
+  win.sort(function(a,b){return b.score-a.score});
+
+  // KPIs
+  var pos = win.filter(function(c){return c.eq>0});
+  var eqStake = pos.reduce(function(s,c){return s+c.eq},0);
+  var fees = win.reduce(function(s,c){return s+c.fee},0);
+  var feeN = win.filter(function(c){return c.fee>0}).length;
+  var adv = win.filter(function(c){return c.act==='A'}).length;
+  document.getElementById('pfTag').textContent = C.length+' synthetic lessees';
+  var K = [
+    {cls:'hero', l:'Equity at stake', v:k(eqStake), s:pos.length+' lessees could take this to Carvana or another brand'},
+    {l:'In the 9-month window', v:win.length, s:'of '+C.length+' lessees get a Next Move card now'},
+    {l:'Have positive equity', v:Math.round(pos.length/win.length*100)+'%', s:pos.length+' lessees, avg '+$(eqStake/pos.length)},
+    {l:'Mileage fees ahead', v:k(fees), s:feeN+' lessees on pace to go over'},
+    {l:'Need a person first', v:adv, s:'Late payments: Loyalty Advocate, no upsell'}
+  ];
+  document.getElementById('kpis').innerHTML = K.map(function(x){return '<div class="card kpi '+(x.cls||'')+'"><span>'+x.l+'</span><strong class="num">'+x.v+'</strong><small>'+x.s+'</small></div>'}).join('');
+
+  // Chart: stacked bars, months left 1..12
+  var order=['A','T','B','R','L'];
+  var by={}; for(var m=1;m<=12;m++){by[m]={A:0,T:0,B:0,R:0,L:0};}
+  C.forEach(function(c){ if(by[c.left]) by[c.left][c.act]++; });
+  var maxN=0; for(m=1;m<=12;m++){var t=0;order.forEach(function(a){t+=by[m][a]});maxN=Math.max(maxN,t);}
+  var top=Math.ceil(maxN/5)*5;
+  var W=560,H=240,pl=30,pr=8,pt=30,pb=34,cw=(W-pl-pr)/12,bw=cw*0.62;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Lessees by months left, stacked by recommended move">';
+  for(var g=0;g<=top;g+=5){var y=pt+(H-pt-pb)*(1-g/top);s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="#E6E8EC" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#8A909B">'+g+'</text>';}
+  var wx=pl+cw*9;
+  s+='<rect x="'+pl+'" y="'+pt+'" width="'+(cw*9)+'" height="'+(H-pt-pb)+'" fill="#FDECEE" opacity=".45"/>';
+  s+='<text x="'+(pl+2)+'" y="'+(pt-10)+'" font-size="11" font-weight="800" fill="#E0202F">Next Move window (1–9 months)</text>';
+  for(m=1;m<=12;m++){
+    var x=pl+cw*(m-1)+(cw-bw)/2, yb=H-pb;
+    order.forEach(function(a){var n=by[m][a]; if(!n) return; var h=(H-pt-pb)*n/top; yb-=h; s+='<rect x="'+x+'" y="'+yb+'" width="'+bw+'" height="'+h+'" fill="'+ACT[a].color+'"><title>'+n+' '+ACT[a].label+', '+m+' months left</title></rect>';});
+    s+='<text x="'+(x+bw/2)+'" y="'+(H-pb+16)+'" text-anchor="middle" font-size="11" fill="#5B616E">'+m+'</text>';
+  }
+  s+='<text x="'+(pl+(W-pl-pr)/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="11" fill="#8A909B">Months until lease ends</text></svg>';
+  document.getElementById('chart').innerHTML=s;
+  document.getElementById('legend').innerHTML=order.map(function(a){return '<span><i class="sw" style="background:'+ACT[a].color+'"></i>'+ACT[a].label+'</span>'}).join('');
+
+  // Mix
+  var mx=['T','B','R','A'].map(function(a){var g=win.filter(function(c){return c.act===a});return {a:a,n:g.length,eq:g.reduce(function(s,c){return s+Math.max(0,c.eq)},0)}});
+  var mmax=Math.max.apply(null,mx.map(function(x){return x.n}));
+  document.getElementById('mix').innerHTML=mx.map(function(x){
+    var extra = x.a==='T'||x.a==='B' ? ' · '+k(x.eq)+' equity' : '';
+    return '<div class="mixrow"><b>'+ACT[x.a].label+'</b><span class="mixbar"><i style="width:'+(x.n/mmax*100)+'%;background:'+ACT[x.a].color+'"></i></span><span class="num r" style="text-align:right;font-weight:800">'+x.n+'</span><span class="mixnote">'+ACT[x.a].note+extra+'</span></div>';
+  }).join('');
+
+  // Table
+  var F='all', showAll=false, sent={};
+  var chips=[['all','All '+win.length]].concat(['A','T','B','R'].map(function(a){return [a,ACT[a].label+' '+win.filter(function(c){return c.act===a}).length]}));
+  var ch=document.getElementById('chips');
+  ch.innerHTML=chips.map(function(c){return '<button data-f="'+c[0]+'" aria-pressed="'+(c[0]===F)+'">'+c[1]+'</button>'}).join('');
+  ch.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;F=b.dataset.f;[].forEach.call(ch.children,function(x){x.setAttribute('aria-pressed',x===b)});draw();});
+  function draw(){
+    var list=win.filter(function(c){return F==='all'||c.act===F});
+    var shown=showAll?list:list.slice(0,12);
+    document.getElementById('rows').innerHTML=shown.map(function(c){
+      var p=c.act==='A'?100:Math.max(4,c.score/maxS*100);
+      return '<tr class="'+(c.demo?'demo':'')+'"><td><b style="font-weight:800">'+c.name+'</b> <span style="color:var(--faint)">· '+c.state+'</span>'+(c.demo?' <span class="pill" style="background:var(--red-soft);color:var(--red)">Demo</span>':'')+'</td>'+
+        '<td>'+c.year+' '+c.model+'</td><td class="r num">'+c.left+'</td>'+
+        '<td class="r num" style="font-weight:800;color:'+(c.eq>0?'var(--green)':'var(--muted)')+'">'+(c.eq>0?'+':'')+$(c.eq)+'</td>'+
+        '<td class="r num" style="color:'+(c.fee>0?'var(--red)':'var(--muted)')+'">'+(c.fee>0?$(c.fee):'—')+'</td>'+
+        '<td><span class="pill p-'+c.act+'">'+ACT[c.act].label+'</span>'+(c.late>=3?' <span style="font-size:12px;color:var(--amber);font-weight:700">'+c.late+' late</span>':'')+'</td>'+
+        '<td><span class="pr"><i style="width:'+(p*0.6)+'px;background:'+(c.act==='A'?'var(--amber)':'var(--red)')+'"></i></span></td>'+
+        '<td><button class="send'+(sent[c.id]?' done':'')+'" data-id="'+c.id+'">'+(sent[c.id]?(c.act==='A'?'Call booked':'Card sent'):(c.act==='A'?'Book call':'Send card'))+'</button></td></tr>';
+    }).join('');
+    var mb=document.getElementById('moreBtn');
+    mb.hidden=list.length<=12; mb.textContent=showAll?'Show top 12':'Show all '+list.length;
+  }
+  document.getElementById('moreBtn').onclick=function(){showAll=!showAll;draw();};
+  var tt;
+  document.getElementById('rows').addEventListener('click',function(e){
+    var b=e.target.closest('.send'); if(!b) return;
+    var c=C.filter(function(x){return x.id===b.dataset.id})[0];
+    sent[c.id]=true; draw();
+    var t=document.getElementById('toast');
+    t.textContent = c.act==='A' ? 'Loyalty Advocate call queued for '+c.name : 'Next Move card sent to '+c.name+' in the Toyota App';
+    t.hidden=false; clearTimeout(tt); tt=setTimeout(function(){t.hidden=true},2400);
+  });
+  draw();
+})();
+</script>
+</body></html>
